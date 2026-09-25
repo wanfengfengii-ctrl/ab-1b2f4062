@@ -1,0 +1,27 @@
+services:
+  # 静态站点：纸本文物展陈光照剂量复核
+  web:
+    build:
+      context: .
+      target: web
+    image: paper-exposure-web:latest
+    ports:
+      # 宿主机端口可通过环境变量 WEB_PORT 配置，默认 8080
+      - "${WEB_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # 一次性校验服务：逻辑校验 → 生产构建 → 页面可访问检查，
+  # 完成后自行退出并以退出码报告结果（0=通过，非 0=失败）。
+  # 用法：docker compose run --rm verify
+  #   或：docker compose up verify --exit-code-from verify
+  verify:
+    build:
+      context: .
+      target: verify
+    image: paper-exposure-verify:latest
